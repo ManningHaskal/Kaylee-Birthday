@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Happy Birthday Kaylee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sky-deep: #1a5f8a;
+      --sky: #3d8fc4;
+      --sky-soft: #7eb8e0;
+      --sky-mist: #d4ecf8;
+      --sky-wash: #eef7fc;
+      --ink: #1a3a52;
+      --ink-soft: #3d5a70;
+      --paper: #fffdf8;
+      --shadow: rgba(26, 95, 138, 0.22);
+      /* Phone-first: open card fills screen; closed cover scales up */
+      --panel-w: min(47.5vw, 210px);
+      --panel-h: min(64dvh, 480px);
+      --open-w: calc(var(--panel-w) * 2);
+      --closed-scale: 1.55;
+      --open-ease: cubic-bezier(0.4, 0.05, 0.2, 1);
+      --flip-ms: 1.1s;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      min-height: 100%;
+      min-height: 100dvh;
+    }
+
+    body {
+      font-family: "Literata", Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, #b8dff5 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 100%, #9ed0ef 0%, transparent 45%),
+        radial-gradient(ellipse 60% 40% at 0% 80%, #c5e6f7 0%, transparent 40%),
+        linear-gradient(165deg, var(--sky-wash) 0%, #cfe8f7 45%, #a8d4ef 100%);
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+
+    .stage {
+      min-height: 100dvh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding:
+        max(0.75rem, var(--safe-top))
+        max(0.75rem, var(--safe-right))
+        max(0.75rem, var(--safe-bottom))
+        max(0.75rem, var(--safe-left));
+    }
+
+    .view {
+      display: none;
+      width: 100%;
+      animation: view-in 0.5s ease both;
+    }
+
+    .view.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes view-in {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .view.leaving {
+      animation: view-out 0.4s ease both;
+    }
+
+    @keyframes view-out {
+      to { opacity: 0; transform: scale(0.94) translateY(-8px); }
+    }
+
+    /* —— Book card ——
+       One flipping leaf: outside = duck, inside = letter.
+       Right sheet stays put (photo). Closed = leaf folded over right. */
+    .book-scene {
+      perspective: 2400px;
+      perspective-origin: 50% 45%;
+    }
+
+    .book {
+      position: relative;
+      width: var(--panel-w);
+      height: var(--panel-h);
+      overflow: hidden;
+      transform: scale(var(--closed-scale));
+      transform-origin: center center;
+      transition:
+        width var(--flip-ms) var(--open-ease),
+        transform var(--flip-ms) var(--open-ease);
+      filter: drop-shadow(0 22px 40px var(--shadow));
+    }
+
+    .book.is-open {
+      width: var(--open-w);
+      overflow: visible;
+      transform: scale(1);
+    }
+
+    .book-inner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--open-w);
+      height: 100%;
+      transform: translateX(calc(var(--panel-w) * -1));
+      transition: transform var(--flip-ms) var(--open-ease);
+      transform-style: preserve-3d;
+    }
+
+    .book.is-open .book-inner {
+      transform: translateX(0);
+    }
+
+    /* Fixed right page — photo */
+    .sheet-right {
+      position: absolute;
+      top: 0;
+      left: var(--panel-w);
+      width: var(--panel-w);
+      height: 100%;
+      border-radius: 0 0.85rem 0.85rem 0;
+      overflow: hidden;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.85rem 0.7rem 1rem;
+      box-shadow: inset 10px 0 20px -14px rgba(26, 95, 138, 0.2);
+    }
+
+    .book:not(.is-open) .sheet-right {
+      border-radius: 0.85rem;
+    }
+
+    /* Flipping leaf — front/back of the same page */
+    .sheet-flip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--panel-w);
+      height: 100%;
+      transform-origin: right center;
+      transform-style: preserve-3d;
+      transform: rotateY(180deg);
+      transition: transform var(--flip-ms) var(--open-ease);
+      z-index: 3;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+      background: transparent;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .book.is-open .sheet-flip {
+      transform: rotateY(0deg);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+    }
+
+    /* Inside of the leaf (letter) — visible when open on the left */
+    .face-inside {
+      background: var(--paper);
+      border-radius: 0.85rem 0 0 0.85rem;
+      box-shadow: inset -10px 0 20px -14px rgba(26, 95, 138, 0.18);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Outside of the leaf (duck) — visible when closed */
+    .face-outside {
+      transform: rotateY(180deg);
+      border-radius: 0.85rem;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1.25rem;
+      padding: 1.75rem 1.25rem 1.5rem;
+    }
+
+    .face-outside::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 0.65rem;
+      border: 2px dashed rgba(61, 143, 196, 0.35);
+      pointer-events: none;
+    }
+
+    .cover-title {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+      color: var(--sky-deep);
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      line-height: 1.2;
+      margin-top: 0.35rem;
+    }
+
+    .duck-art {
+      width: 70%;
+      max-width: 220px;
+      margin-top: auto;
+      margin-bottom: auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .letter {
+      padding: 0.9rem 0.75rem 1rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      min-height: 100%;
+      color: #111;
+    }
+
+    .letter h1 {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: clamp(0.95rem, 3.8vw, 1.35rem);
+      color: #111;
+      line-height: 1.25;
+    }
+
+    .letter p {
+      font-size: clamp(0.72rem, 2.9vw, 0.9rem);
+      line-height: 1.5;
+      color: #111;
+    }
+
+    .letter .sign-off {
+      margin-top: 0.15rem;
+    }
+
+    .letter .from {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 500;
+      font-size: clamp(0.9rem, 3.4vw, 1.05rem);
+      color: #111;
+    }
+
+    .photo-frame {
+      width: min(100%, 78%);
+      aspect-ratio: 3 / 4;
+      border-radius: 0.65rem;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(26, 95, 138, 0.2);
+      background: #ccc;
+      flex-shrink: 0;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .btn {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: clamp(0.82rem, 3.2vw, 0.95rem);
+      color: white;
+      background: linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 100%);
+      border: none;
+      border-radius: 999px;
+      padding: 0.7rem 1.15rem;
+      min-height: 44px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #144a6b, 0 8px 20px rgba(26, 95, 138, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    /* Keep the button under the closed cover */
+    .book:not(.is-open) .sheet-right {
+      visibility: hidden;
+    }
+
+    .book.is-open .sheet-right {
+      visibility: visible;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #144a6b, 0 12px 24px rgba(26, 95, 138, 0.35);
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #144a6b, 0 4px 12px rgba(26, 95, 138, 0.25);
+    }
+
+    /* Spine shadow while open */
+    .book.is-open .sheet-right::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 14px;
+      background: linear-gradient(90deg, rgba(26, 95, 138, 0.12), transparent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* —— Gift —— */
+    .gift-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      width: min(72vw, 280px);
+    }
+
+    .gift {
+      width: 100%;
+      aspect-ratio: 1;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      position: relative;
+      perspective: 900px;
+      touch-action: manipulation;
+      animation: gift-bounce 2.4s ease-in-out infinite;
+    }
+
+    @keyframes gift-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .gift:hover:not(.is-opening) { animation-play-state: paused; transform: scale(1.03); }
+    .gift:active:not(.is-opening) { transform: scale(0.97); }
+
+    .gift.is-opening {
+      animation: none;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .gift-stage {
+      position: absolute;
+      inset: 8% 12% 6%;
+      transform-style: preserve-3d;
+      filter: drop-shadow(0 18px 28px var(--shadow));
+    }
+
+    .gift-body {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 58%;
+      background: linear-gradient(180deg, #4a9fd0 0%, #2b7bb5 45%, #1a5f8a 100%);
+      border-radius: 10px 10px 14px 14px;
+      overflow: hidden;
+    }
+
+    .gift-body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18%;
+      height: 100%;
+      background: #f5d76e;
+    }
+
+    .gift-body::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 18%;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .gift-lid {
+      position: absolute;
+      left: -4%;
+      right: -4%;
+      top: 28%;
+      height: 22%;
+      transform-origin: top center;
+      transform-style: preserve-3d;
+      transition: transform 0.75s cubic-bezier(0.4, 0.05, 0.2, 1);
+      z-index: 2;
+    }
+
+    .gift.is-opening .gift-lid {
+      transform: rotateX(-130deg);
+    }
+
+    .gift-lid-face {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #3d8fc4 0%, #2b7bb5 100%);
+      border-radius: 10px;
+      box-shadow: 0 4px 0 #164a6e;
+    }
+
+    .gift-lid-face::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 16%;
+      background: #f5d76e;
+      border-radius: 2px;
+    }
+
+    .gift-lid-face::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 42%;
+      height: 16%;
+      background: #f5d76e;
+    }
+
+    .gift-bow {
+      position: absolute;
+      left: 50%;
+      top: -28%;
+      width: 42%;
+      height: 55%;
+      transform: translateX(-50%);
+      z-index: 3;
+    }
+
+    .gift-bow::before,
+    .gift-bow::after {
+      content: "";
+      position: absolute;
+      top: 20%;
+      width: 48%;
+      height: 70%;
+      background: #f5d76e;
+      border-radius: 50%;
+    }
+
+    .gift-bow::before { left: 0; }
+    .gift-bow::after { right: 0; }
+
+    .gift-bow-knot {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: 28%;
+      height: 40%;
+      transform: translate(-50%, -50%);
+      background: #e8b84a;
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .gift-burst {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: 0;
+      height: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .burst-emoji {
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 1.6rem;
+      line-height: 1;
+      opacity: 0;
+      offset-path: none;
+      animation: burst-fly 1.35s ease-out forwards;
+      will-change: transform, opacity;
+    }
+
+    @keyframes burst-fly {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.3);
+      }
+      12% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.15);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(
+          calc(-50% + var(--dx)),
+          calc(-50% + var(--dy))
+        ) scale(var(--scale)) rotate(var(--rot));
+      }
+    }
+
+    .gift-label {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: var(--sky-deep);
+      text-align: center;
+      transition: opacity 0.3s ease;
+    }
+
+    .gift.is-opening ~ .gift-label {
+      opacity: 0;
+    }
+
+    /* —— Lego reveal —— */
+    .reveal {
+      width: min(92vw, 420px);
+      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.5rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+
+    .lego-frame {
+      width: 100%;
+      max-height: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: transparent;
+      animation: pop-in 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.35));
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .lego-frame img {
+      width: 100%;
+      height: auto;
+      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.5rem);
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 700px) {
+      :root {
+        --panel-w: min(38vw, 320px);
+        --panel-h: min(70dvh, 540px);
+        --closed-scale: 1;
+      }
+
+      .letter {
+        padding: 1.35rem 1.2rem 1.4rem 1.35rem;
+        gap: 0.7rem;
+      }
+
+      .sheet-right {
+        gap: 1rem;
+        padding: 1.1rem;
+      }
+
+      .photo-frame {
+        width: min(100%, 210px);
+      }
+
+      .reveal {
+        width: min(70vw, 520px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gift { animation: none; }
+      .book, .book-inner, .sheet-flip, .view, .lego-frame {
+        transition: none !important;
+        animation: none !important;
+      }
+      .gift.is-opening .gift-lid {
+        transform: rotateX(-130deg);
+      }
+      .burst-emoji {
+        animation-duration: 0.01s;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="view active" id="view-card" aria-label="Birthday card">
+      <div class="book-scene">
+        <div class="book" id="book">
+          <div class="book-inner">
+            <!-- One leaf: outside = duck, inside = letter -->
+            <div
+              class="sheet-flip"
+              id="open-card"
+              role="button"
+              tabindex="0"
+              aria-label="Open birthday card"
+              aria-expanded="false"
+            >
+              <div class="face face-inside">
+                <div class="letter">
+                  <h1>Happy Birthday Kaylee,</h1>
+                  <p>
+                    Its hard to find the words to tell you how much you mean to me.
+                    The past 6 months have been the best months of my life.
+                    You are my best friend, my soul mate, my everything.
+                  </p>
+                  <p>
+                    I wish more than anything that I could wake up to you every day.
+                    But even when we're far apart, counting down the days until I can see you again,
+                    every second is worth it. Loving isn't about convenience.
+                    Its about choosing you over and over again.
+                  </p>
+                  <p>
+                    I cant wait to spend today and every day with you, forever.
+                  </p>
+                  <p class="sign-off">I love you,</p>
+                  <p class="from">Manning</p>
+                </div>
+              </div>
+              <div class="face face-outside">
+                <span class="cover-title">Happy Birthday</span>
+                <svg class="duck-art" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <ellipse cx="100" cy="130" rx="62" ry="48" fill="#F5D76E"/>
+                  <ellipse cx="100" cy="138" rx="48" ry="34" fill="#FFE9A0"/>
+                  <ellipse cx="72" cy="128" rx="22" ry="28" fill="#E8B84A" transform="rotate(-20 72 128)"/>
+                  <circle cx="128" cy="72" r="38" fill="#F5D76E"/>
+                  <circle cx="138" cy="66" r="7" fill="#1A3A52"/>
+                  <circle cx="140" cy="64" r="2.5" fill="#fff"/>
+                  <ellipse cx="162" cy="78" rx="16" ry="8" fill="#F08A3C"/>
+                  <ellipse cx="158" cy="76" rx="8" ry="3.5" fill="#E06A20"/>
+                  <circle cx="122" cy="82" r="6" fill="#FFB4A2" opacity="0.55"/>
+                  <ellipse cx="82" cy="172" rx="14" ry="6" fill="#F08A3C"/>
+                  <ellipse cx="118" cy="172" rx="14" ry="6" fill="#F08A3C"/>
+                  <path d="M48 58c0-6 5-10 10-10 4 0 7 2 8 5 1-3 4-5 8-5 5 0 10 4 10 10 0 10-18 20-18 20S48 68 48 58z" fill="#3D8FC4" opacity="0.85"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Right page — photo -->
+            <div class="sheet-right">
+              <div class="photo-frame">
+                <img src="assets/us.jpg" alt="Manning and Kaylee" />
+              </div>
+              <button class="btn" id="see-present" type="button">see my present</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-gift" aria-label="Your present">
+      <div class="gift-wrap">
+        <button class="gift" id="open-gift" type="button" aria-label="Tap to open your present">
+          <div class="gift-burst" id="gift-burst" aria-hidden="true"></div>
+          <div class="gift-stage">
+            <div class="gift-lid">
+              <div class="gift-lid-face">
+                <div class="gift-bow">
+                  <div class="gift-bow-knot"></div>
+                </div>
+              </div>
+            </div>
+            <div class="gift-body"></div>
+          </div>
+        </button>
+        <p class="gift-label">Tap to open your present</p>
+      </div>
+    </section>
+
+    <section class="view" id="view-lego" aria-label="Lego present">
+      <div class="reveal">
+        <div class="lego-frame">
+          <img src="assets/lego.png" alt="Custom Lego of us" id="lego-photo" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const book = document.getElementById("book");
+    const openCardBtn = document.getElementById("open-card");
+    const views = {
+      card: document.getElementById("view-card"),
+      gift: document.getElementById("view-gift"),
+      lego: document.getElementById("view-lego"),
+    };
+
+    let cardOpen = false;
+
+    function openCard() {
+      if (cardOpen) return;
+      cardOpen = true;
+      book.classList.add("is-open");
+      openCardBtn.setAttribute("aria-expanded", "true");
+      openCardBtn.removeAttribute("tabindex");
+    }
+
+    openCardBtn.addEventListener("click", openCard);
+    openCardBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openCard();
+      }
+    });
+
+    function goTo(fromKey, toKey) {
+      const from = views[fromKey];
+      const to = views[toKey];
+      from.classList.add("leaving");
+      window.setTimeout(() => {
+        from.classList.remove("active", "leaving");
+        to.classList.add("active");
+      }, 380);
+    }
+
+    document.getElementById("see-present").addEventListener("click", () => {
+      goTo("card", "gift");
+    });
+
+    const openGiftBtn = document.getElementById("open-gift");
+    const giftBurst = document.getElementById("gift-burst");
+    const burstEmojis = ["❤️", "💕", "💗", "💖", "🌸", "🌺", "🌷", "🌹", "💐", "🌼", "💛", "💙", "🤍"];
+    let giftOpening = false;
+
+    function burstFromGift() {
+      giftBurst.innerHTML = "";
+      const count = 28;
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement("span");
+        el.className = "burst-emoji";
+        el.textContent = burstEmojis[i % burstEmojis.length];
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+        const dist = 70 + Math.random() * 130;
+        const dx = Math.cos(angle) * dist * (0.7 + Math.random() * 0.5);
+        const dy = Math.sin(angle) * dist * 0.55 - (90 + Math.random() * 110);
+        el.style.setProperty("--dx", `${dx.toFixed(1)}px`);
+        el.style.setProperty("--dy", `${dy.toFixed(1)}px`);
+        el.style.setProperty("--rot", `${(Math.random() * 80 - 40).toFixed(1)}deg`);
+        el.style.setProperty("--scale", `${(0.7 + Math.random() * 0.7).toFixed(2)}`);
+        el.style.animationDelay = `${(Math.random() * 0.22).toFixed(2)}s`;
+        el.style.fontSize = `${1.2 + Math.random() * 0.9}rem`;
+        giftBurst.appendChild(el);
+      }
+    }
+
+    openGiftBtn.addEventListener("click", () => {
+      if (giftOpening) return;
+      giftOpening = true;
+      openGiftBtn.classList.add("is-opening");
+      burstFromGift();
+      window.setTimeout(() => {
+        goTo("gift", "lego");
+      }, 1600);
+    });
+  </script>
+</body>
+</html>
