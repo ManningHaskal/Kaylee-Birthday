@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+package.json
+
+# Huge Studio source exports (keep compressed GLB only)
+Bday obj.obj
+Bday obj.mtl
+assets/lego-source.obj
+assets/lego-source.mtl
+assets/lego-raw.glb

@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="format-detection" content="telephone=no" />
   <title>Happy Birthday Kaylee</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet" />
@@ -560,24 +561,120 @@
     /* —— Lego reveal —— */
     .reveal {
       width: min(92vw, 420px);
-      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.5rem);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       margin: 0 auto;
+      gap: 1rem;
+    }
+
+    .reveal.is-3d {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      margin: 0;
+      padding:
+        max(0.5rem, var(--safe-top))
+        max(0.5rem, var(--safe-right))
+        max(0.5rem, var(--safe-bottom))
+        max(0.5rem, var(--safe-left));
+      gap: 0;
+      z-index: 20;
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, #b8dff5 0%, transparent 55%),
+        linear-gradient(165deg, var(--sky-wash) 0%, #cfe8f7 45%, #a8d4ef 100%);
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
+    body.is-3d-mode {
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
+    body.is-3d-mode .stage {
+      min-height: 100%;
+      padding: 0;
+    }
+
+    .lego-still,
+    .lego-3d {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .reveal:not(.is-3d) .lego-still {
+      display: flex;
+    }
+
+    .reveal.is-3d .lego-3d {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .lego-photo {
+      width: 100%;
+      height: auto;
+      max-height: min(68dvh, 520px);
+      object-fit: contain;
+      border-radius: 1rem;
+      display: block;
+      animation: pop-in 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+      filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.3));
+    }
+
+    .btn-interact {
+      font-family: "Fredoka", system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: white;
+      background: linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 100%);
+      border: none;
+      border-radius: 999px;
+      padding: 0.85rem 1.75rem;
+      min-height: 48px;
+      min-width: 10rem;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #144a6b, 0 10px 24px rgba(26, 95, 138, 0.3);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: manipulation;
+      animation: pop-in 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.12s both;
+    }
+
+    .btn-interact:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #144a6b, 0 14px 28px rgba(26, 95, 138, 0.35);
+    }
+
+    .btn-interact:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #144a6b, 0 6px 16px rgba(26, 95, 138, 0.25);
     }
 
     .lego-frame {
       width: 100%;
-      max-height: inherit;
+      flex: 1;
+      min-height: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0.75rem;
+      border-radius: 1rem;
       overflow: hidden;
-      background: transparent;
+      background: rgba(255, 255, 255, 0.35);
       animation: pop-in 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
-      filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.35));
+      box-shadow: 0 18px 40px rgba(26, 95, 138, 0.2);
     }
 
     @keyframes pop-in {
@@ -585,13 +682,28 @@
       to { opacity: 1; transform: scale(1); }
     }
 
-    .lego-frame img {
+    .reveal.is-3d .lego-frame {
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+      animation: none;
+    }
+
+    .lego-viewer {
       width: 100%;
-      height: auto;
-      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.5rem);
-      object-fit: contain;
-      display: block;
-      margin: 0 auto;
+      height: 100%;
+      min-height: 100%;
+      --poster-color: transparent;
+      background: transparent;
+      outline: none;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* Bigger touch surface on phones */
+    .reveal.is-3d .lego-viewer {
+      min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
     }
 
     @media (min-width: 700px) {
@@ -630,7 +742,12 @@
       }
 
       .reveal {
-        width: min(70vw, 520px);
+        width: min(70vw, 480px);
+      }
+
+      .reveal.is-3d {
+        width: 100%;
+        height: 100%;
       }
     }
 
@@ -736,9 +853,35 @@
     </section>
 
     <section class="view" id="view-lego" aria-label="Lego present">
-      <div class="reveal">
-        <div class="lego-frame">
-          <img src="assets/lego.png" alt="Custom Lego of us" id="lego-photo" />
+      <div class="reveal" id="lego-reveal">
+        <div class="lego-still">
+          <img class="lego-photo" src="assets/lego.png" alt="Custom Lego of us" />
+          <button class="btn-interact" id="interact-lego" type="button">interact</button>
+        </div>
+        <div class="lego-3d">
+          <div class="lego-frame">
+            <model-viewer
+              id="lego-viewer"
+              class="lego-viewer"
+              alt="Custom Lego of us"
+              poster="assets/lego.png"
+              camera-controls
+              touch-action="none"
+              disable-pan
+              disable-tap
+              interaction-prompt="none"
+              shadow-intensity="0.85"
+              exposure="1.15"
+              environment-image="neutral"
+              orientation="0deg 0deg 180deg"
+              camera-orbit="0deg 0deg 105%"
+              min-camera-orbit="auto auto 45%"
+              max-camera-orbit="auto auto 220%"
+              min-field-of-view="18deg"
+              max-field-of-view="42deg"
+              interpolation-decay="60"
+            ></model-viewer>
+          </div>
         </div>
       </div>
     </section>
@@ -787,8 +930,18 @@
 
     const openGiftBtn = document.getElementById("open-gift");
     const giftBurst = document.getElementById("gift-burst");
+    const legoReveal = document.getElementById("lego-reveal");
+    const legoViewer = document.getElementById("lego-viewer");
+    const interactBtn = document.getElementById("interact-lego");
     const burstEmojis = ["❤️", "💕", "💗", "💖", "🌸", "🌺", "🌷", "🌹", "💐", "🌼", "💛", "💙", "🤍"];
     let giftOpening = false;
+    let legoLoaded = false;
+
+    function loadLegoModel() {
+      if (legoLoaded || !legoViewer) return;
+      legoLoaded = true;
+      legoViewer.src = "assets/lego.glb";
+    }
 
     function burstFromGift() {
       giftBurst.innerHTML = "";
@@ -819,6 +972,12 @@
       window.setTimeout(() => {
         goTo("gift", "lego");
       }, 1600);
+    });
+
+    interactBtn.addEventListener("click", () => {
+      legoReveal.classList.add("is-3d");
+      document.body.classList.add("is-3d-mode");
+      loadLegoModel();
     });
   </script>
 </body>
