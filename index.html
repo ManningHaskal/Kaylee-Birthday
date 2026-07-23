@@ -8,6 +8,8 @@
   <meta name="format-detection" content="telephone=no" />
   <title>Happy Birthday Kaylee</title>
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <link rel="preload" href="assets/lego.glb" as="fetch" crossorigin="anonymous" />
+  <link rel="preload" href="assets/lego.png" as="image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap" rel="stylesheet" />
@@ -596,6 +598,19 @@
       height: 100%;
     }
 
+    /* Offscreen mount so model-viewer can load while the card view is active */
+    .lego-warmup {
+      position: fixed;
+      left: -140vw;
+      top: 0;
+      width: min(96vw, 520px);
+      height: min(72dvh, 560px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+
     .lego-photo {
       width: 100%;
       height: auto;
@@ -817,29 +832,32 @@
           <button class="btn-interact" id="interact-lego" type="button">interact</button>
         </div>
         <div class="lego-3d">
-          <div class="lego-frame">
-            <model-viewer
-              id="lego-viewer"
-              class="lego-viewer"
-              alt="Custom Lego of us"
-              poster="assets/lego.png"
-              camera-controls
-              touch-action="none"
-              interaction-prompt="auto"
-              shadow-intensity="0.85"
-              exposure="1.15"
-              environment-image="neutral"
-              orientation="0deg 0deg 180deg"
-              camera-orbit="0deg 0deg 105%"
-              min-camera-orbit="auto auto 50%"
-              max-camera-orbit="auto auto 250%"
-              interpolation-decay="100"
-            ></model-viewer>
-          </div>
+          <div class="lego-frame" id="lego-frame"></div>
         </div>
       </div>
     </section>
   </main>
+
+  <!-- Warm up outside hidden views so loading can happen during the card -->
+  <div class="lego-warmup" id="lego-warmup" aria-hidden="true">
+    <model-viewer
+      id="lego-viewer"
+      class="lego-viewer"
+      alt="Custom Lego of us"
+      poster="assets/lego.png"
+      camera-controls
+      touch-action="none"
+      interaction-prompt="auto"
+      shadow-intensity="0.85"
+      exposure="1.15"
+      environment-image="neutral"
+      orientation="0deg 0deg 180deg"
+      camera-orbit="0deg 0deg 105%"
+      min-camera-orbit="auto auto 50%"
+      max-camera-orbit="auto auto 250%"
+      interpolation-decay="100"
+    ></model-viewer>
+  </div>
 
   <script>
     const book = document.getElementById("book");
@@ -858,6 +876,8 @@
       book.classList.add("is-open");
       openCardBtn.setAttribute("aria-expanded", "true");
       openCardBtn.removeAttribute("tabindex");
+      // Start loading / warming the 3D model while she reads the letter
+      loadLegoModel();
     }
 
     openCardBtn.addEventListener("click", openCard);
@@ -886,6 +906,7 @@
     const giftBurst = document.getElementById("gift-burst");
     const legoReveal = document.getElementById("lego-reveal");
     const legoViewer = document.getElementById("lego-viewer");
+    const legoFrame = document.getElementById("lego-frame");
     const interactBtn = document.getElementById("interact-lego");
     const burstEmojis = ["❤️", "💕", "💗", "💖", "🌸", "🌺", "🌷", "🌹", "💐", "🌼", "💛", "💙", "🤍"];
     let giftOpening = false;
@@ -895,6 +916,13 @@
       if (legoLoaded || !legoViewer) return;
       legoLoaded = true;
       legoViewer.src = "assets/lego.glb";
+    }
+
+    // Start as soon as the page is idle (plus again when the card opens)
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(() => loadLegoModel(), { timeout: 2500 });
+    } else {
+      window.setTimeout(loadLegoModel, 1200);
     }
 
     function burstFromGift() {
@@ -923,14 +951,23 @@
       giftOpening = true;
       openGiftBtn.classList.add("is-opening");
       burstFromGift();
+      loadLegoModel();
       window.setTimeout(() => {
         goTo("gift", "lego");
       }, 1600);
     });
 
     interactBtn.addEventListener("click", () => {
-      legoReveal.classList.add("is-3d");
       loadLegoModel();
+      if (legoViewer.parentElement !== legoFrame) {
+        legoFrame.appendChild(legoViewer);
+      }
+      legoReveal.classList.add("is-3d");
+      if (legoViewer.loaded) {
+        try {
+          legoViewer.jumpCameraToGoal();
+        } catch (_) {}
+      }
     });
   </script>
 </body>
